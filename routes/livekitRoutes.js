@@ -4,19 +4,23 @@ const dotenv = require("dotenv");
 const { AccessToken } = require("livekit-server-sdk");
 const User = require("../models/User");
 const store = require("../store");
+const LiveKit = require("../models/LiveKit");
 dotenv.config();
 
 router.post("/token", async (req, res) => {
   const { roomName, userId, calleeId } = req.body;
   const user = await User.findById(userId).select("username");
-  
-  const at = new AccessToken(
-    process.env.LIVEKIT_API_KEY,
-    process.env.LIVEKIT_API_SECRET,
-    {
-      identity: user.username,
-    }
-  );
+  const liveKit = await LiveKit.findOne();
+
+  if (!liveKit) {
+    return res.send({
+      message: "liveKit credentials not set",
+    });
+  }
+
+  const at = new AccessToken(liveKit.key, liveKit.secret, {
+    identity: user.username,
+  });
   at.addGrant({
     roomJoin: true,
     canPublish: true,
